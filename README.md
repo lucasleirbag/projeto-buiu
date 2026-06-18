@@ -19,6 +19,7 @@ npm start
 |--------|------|
 | `Ctrl+Alt+\` | Mostrar / ocultar o overlay |
 | `Ctrl+Alt+C` | Modo configuração: redimensiona/move a janela e salva o tamanho |
+| `Ctrl+Alt+H` | Abrir/fechar a janela de tutorial (lista de atalhos) |
 | `Ctrl+Alt+R` | Reiniciar o aplicativo (botão de pânico) |
 | `Ctrl+Alt+I` | Ligar/desligar início automático com o Windows |
 | `Ctrl+Alt+Q` | Sair do aplicativo |

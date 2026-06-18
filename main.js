@@ -21,6 +21,7 @@ const CONFIGURACAO_PADRAO = {
 };
 
 let janelaDoOverlay = null;
+let janelaDeTutorial = null;
 let modoConfiguracaoAtivo = false;
 let estaEncerrandoAplicacao = false;
 let configuracaoAtual = { ...CONFIGURACAO_PADRAO };
@@ -165,6 +166,49 @@ function recuperarDeFalhaNoRenderer() {
   }
 }
 
+function criarJanelaDeTutorial() {
+  janelaDeTutorial = new BrowserWindow({
+    width: 460,
+    height: 580,
+    frame: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    focusable: false,
+    resizable: false,
+    show: false,
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+  janelaDeTutorial.setContentProtection(true);
+  janelaDeTutorial.setAlwaysOnTop(true, "screen-saver");
+  janelaDeTutorial.setVisibleOnAllWorkspaces(true);
+  janelaDeTutorial.setOpacity(configuracaoAtual.opacidade);
+  janelaDeTutorial.on("show", () => janelaDeTutorial.setContentProtection(true));
+  janelaDeTutorial.on("closed", () => {
+    janelaDeTutorial = null;
+  });
+  janelaDeTutorial.loadFile(path.join(__dirname, "renderer", "tutorial.html"));
+  janelaDeTutorial.webContents.on("did-finish-load", () => {
+    janelaDeTutorial.showInactive();
+    janelaDeTutorial.setContentProtection(true);
+  });
+}
+
+function alternarTutorial() {
+  if (!janelaDeTutorial || janelaDeTutorial.isDestroyed()) {
+    criarJanelaDeTutorial();
+    return;
+  }
+  if (janelaDeTutorial.isVisible()) {
+    janelaDeTutorial.hide();
+  } else {
+    janelaDeTutorial.showInactive();
+    janelaDeTutorial.setContentProtection(true);
+  }
+}
+
 function registrarAtalhosDeNavegacao() {
   globalShortcut.register("Control+0", () => enviarFiltroDeParte(0));
   for (let numeroDaParte = 1; numeroDaParte <= NUMERO_MAXIMO_DE_PARTES; numeroDaParte += 1) {
@@ -197,6 +241,7 @@ function registrarAtalhosFixos() {
   globalShortcut.register("Control+Alt+Q", encerrarAplicacao);
   globalShortcut.register("Control+Alt+R", reiniciarAplicacao);
   globalShortcut.register("Control+Alt+I", alternarInicioComOSistema);
+  globalShortcut.register("Control+Alt+H", alternarTutorial);
 }
 
 function moverJanela(deslocamentoHorizontal, deslocamentoVertical) {
