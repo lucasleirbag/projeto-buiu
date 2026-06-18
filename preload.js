@@ -9,4 +9,6 @@ contextBridge.exposeInMainWorld("ponteDoOverlay", {
     ipcRenderer.on("modo-configuracao", (evento, modoAtivo) => callback(modoAtivo)),
   aoAplicarTamanhoDaFonte: (callback) =>
     ipcRenderer.on("aplicar-tamanho-da-fonte", (evento, tamanhoDaFonte) => callback(tamanhoDaFonte)),
+  aoReceberAviso: (callback) =>
+    ipcRenderer.on("aviso", (evento, mensagemDeAviso) => callback(mensagemDeAviso)),
 });

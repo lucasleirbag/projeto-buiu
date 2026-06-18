@@ -1,7 +1,11 @@
 const containerDoRoteiro = document.getElementById("roteiro");
 const bannerDeConfiguracao = document.getElementById("banner-configuracao");
+const elementoDeAviso = document.getElementById("aviso");
+
+const DURACAO_DO_AVISO_EM_MILISSEGUNDOS = 2500;
 
 let parteSelecionada = 0;
+let temporizadorDoAviso = null;
 
 function aplicarFiltroDeParte(numeroDaParte) {
   const todasAsSecoes = document.querySelectorAll(".secao");
@@ -37,4 +41,15 @@ window.ponteDoOverlay.aoAlternarModoConfiguracao((modoAtivo) => {
 
 window.ponteDoOverlay.aoAplicarTamanhoDaFonte((tamanhoDaFonte) => {
   document.body.style.fontSize = `${tamanhoDaFonte}px`;
+});
+
+window.ponteDoOverlay.aoReceberAviso((mensagemDeAviso) => {
+  elementoDeAviso.textContent = mensagemDeAviso;
+  elementoDeAviso.style.display = "block";
+  if (temporizadorDoAviso) {
+    clearTimeout(temporizadorDoAviso);
+  }
+  temporizadorDoAviso = setTimeout(() => {
+    elementoDeAviso.style.display = "none";
+  }, DURACAO_DO_AVISO_EM_MILISSEGUNDOS);
 });

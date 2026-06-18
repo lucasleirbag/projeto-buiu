@@ -1,4 +1,4 @@
-const { app, BrowserWindow, globalShortcut, ipcMain } = require("electron");
+const { app, BrowserWindow, globalShortcut } = require("electron");
 const fs = require("fs");
 const path = require("path");
 const { marked } = require("marked");
@@ -17,10 +17,12 @@ const CONFIGURACAO_PADRAO = {
   posicao_vertical: null,
   tamanho_da_fonte: 14,
   opacidade: 0.85,
+  iniciar_com_o_sistema: false,
 };
 
 let janelaDoOverlay = null;
 let modoConfiguracaoAtivo = false;
+let estaEncerrandoAplicacao = false;
 let configuracaoAtual = { ...CONFIGURACAO_PADRAO };
 
 function obterCaminhoDaConfiguracao() {
@@ -37,11 +39,15 @@ function carregarConfiguracao() {
 }
 
 function salvarConfiguracao(configuracaoParaSalvar) {
-  fs.writeFileSync(
-    obterCaminhoDaConfiguracao(),
-    JSON.stringify(configuracaoParaSalvar, null, 2),
-    "utf-8"
-  );
+  try {
+    fs.writeFileSync(
+      obterCaminhoDaConfiguracao(),
+      JSON.stringify(configuracaoParaSalvar, null, 2),
+      "utf-8"
+    );
+  } catch (erroAoSalvar) {
+    console.error("Falha ao salvar configuracao:", erroAoSalvar);
+  }
 }
 
 function lerTextoDoRoteiro() {
@@ -128,6 +134,7 @@ function criarJanelaDoOverlay() {
   janelaDoOverlay.setVisibleOnAllWorkspaces(true);
   janelaDoOverlay.setOpacity(configuracaoAtual.opacidade);
   janelaDoOverlay.on("show", () => janelaDoOverlay.setContentProtection(true));
+  configurarRecuperacaoDeFalhas();
   janelaDoOverlay.loadFile(path.join(__dirname, "renderer", "index.html"));
 
   janelaDoOverlay.webContents.on("did-finish-load", () => {
@@ -136,26 +143,26 @@ function criarJanelaDoOverlay() {
   });
 }
 
-function moverJanela(deslocamentoHorizontal, deslocamentoVertical) {
-  if (!janelaDoOverlay) {
-    return;
-  }
-  const [posicaoHorizontalAtual, posicaoVerticalAtual] = janelaDoOverlay.getPosition();
-  const novaPosicaoHorizontal = posicaoHorizontalAtual + deslocamentoHorizontal;
-  const novaPosicaoVertical = posicaoVerticalAtual + deslocamentoVertical;
-  janelaDoOverlay.setPosition(novaPosicaoHorizontal, novaPosicaoVertical);
-  configuracaoAtual.posicao_horizontal = novaPosicaoHorizontal;
-  configuracaoAtual.posicao_vertical = novaPosicaoVertical;
+function configurarRecuperacaoDeFalhas() {
+  janelaDoOverlay.webContents.on("render-process-gone", () => recuperarDeFalhaNoRenderer());
+  janelaDoOverlay.webContents.on("unresponsive", () => recuperarDeFalhaNoRenderer());
+  janelaDoOverlay.on("closed", () => {
+    janelaDoOverlay = null;
+    if (!estaEncerrandoAplicacao) {
+      criarJanelaDoOverlay();
+    }
+  });
 }
 
-function ajustarOpacidade(incrementoDeOpacidade) {
-  if (!janelaDoOverlay) {
+function recuperarDeFalhaNoRenderer() {
+  if (estaEncerrandoAplicacao) {
     return;
   }
-  let novaOpacidade = configuracaoAtual.opacidade + incrementoDeOpacidade;
-  novaOpacidade = Math.min(OPACIDADE_MAXIMA, Math.max(OPACIDADE_MINIMA, novaOpacidade));
-  configuracaoAtual.opacidade = novaOpacidade;
-  janelaDoOverlay.setOpacity(novaOpacidade);
+  if (janelaDoOverlay && !janelaDoOverlay.isDestroyed()) {
+    janelaDoOverlay.reload();
+  } else {
+    criarJanelaDoOverlay();
+  }
 }
 
 function registrarAtalhosDeNavegacao() {
@@ -187,7 +194,31 @@ function removerAtalhosDeNavegacao() {
 function registrarAtalhosFixos() {
   globalShortcut.register("Control+Alt+\\", alternarVisibilidade);
   globalShortcut.register("Control+Alt+C", alternarModoConfiguracao);
-  globalShortcut.register("Control+Alt+Q", () => app.quit());
+  globalShortcut.register("Control+Alt+Q", encerrarAplicacao);
+  globalShortcut.register("Control+Alt+R", reiniciarAplicacao);
+  globalShortcut.register("Control+Alt+I", alternarInicioComOSistema);
+}
+
+function moverJanela(deslocamentoHorizontal, deslocamentoVertical) {
+  if (!janelaDoOverlay) {
+    return;
+  }
+  const [posicaoHorizontalAtual, posicaoVerticalAtual] = janelaDoOverlay.getPosition();
+  const novaPosicaoHorizontal = posicaoHorizontalAtual + deslocamentoHorizontal;
+  const novaPosicaoVertical = posicaoVerticalAtual + deslocamentoVertical;
+  janelaDoOverlay.setPosition(novaPosicaoHorizontal, novaPosicaoVertical);
+  configuracaoAtual.posicao_horizontal = novaPosicaoHorizontal;
+  configuracaoAtual.posicao_vertical = novaPosicaoVertical;
+}
+
+function ajustarOpacidade(incrementoDeOpacidade) {
+  if (!janelaDoOverlay) {
+    return;
+  }
+  let novaOpacidade = configuracaoAtual.opacidade + incrementoDeOpacidade;
+  novaOpacidade = Math.min(OPACIDADE_MAXIMA, Math.max(OPACIDADE_MINIMA, novaOpacidade));
+  configuracaoAtual.opacidade = novaOpacidade;
+  janelaDoOverlay.setOpacity(novaOpacidade);
 }
 
 function enviarFiltroDeParte(numeroDaParte) {
@@ -198,6 +229,15 @@ function enviarFiltroDeParte(numeroDaParte) {
     mostrarOverlay();
   }
   janelaDoOverlay.webContents.send("filtrar-parte", numeroDaParte);
+}
+
+function enviarAviso(mensagemDeAviso) {
+  if (janelaDoOverlay && !janelaDoOverlay.isDestroyed()) {
+    if (!janelaDoOverlay.isVisible()) {
+      mostrarOverlay();
+    }
+    janelaDoOverlay.webContents.send("aviso", mensagemDeAviso);
+  }
 }
 
 function mostrarOverlay() {
@@ -248,16 +288,71 @@ function alternarModoConfiguracao() {
   janelaDoOverlay.webContents.send("modo-configuracao", modoConfiguracaoAtivo);
 }
 
-app.whenReady().then(() => {
-  criarJanelaDoOverlay();
-  registrarAtalhosFixos();
-});
+function aplicarInicioAutomatico() {
+  app.setLoginItemSettings({
+    openAtLogin: configuracaoAtual.iniciar_com_o_sistema,
+    path: process.execPath,
+    args: [app.getAppPath()],
+  });
+}
 
-app.on("will-quit", () => {
+function alternarInicioComOSistema() {
+  configuracaoAtual.iniciar_com_o_sistema = !configuracaoAtual.iniciar_com_o_sistema;
+  aplicarInicioAutomatico();
   salvarConfiguracao(configuracaoAtual);
-  globalShortcut.unregisterAll();
+  enviarAviso(
+    configuracaoAtual.iniciar_com_o_sistema
+      ? "Inicio automatico com o Windows: LIGADO"
+      : "Inicio automatico com o Windows: DESLIGADO"
+  );
+}
+
+function encerrarAplicacao() {
+  estaEncerrandoAplicacao = true;
+  salvarConfiguracao(configuracaoAtual);
+  app.quit();
+}
+
+function reiniciarAplicacao() {
+  estaEncerrandoAplicacao = true;
+  salvarConfiguracao(configuracaoAtual);
+  app.relaunch();
+  app.exit(0);
+}
+
+process.on("uncaughtException", (erroNaoTratado) => {
+  console.error("Excecao nao tratada no processo principal:", erroNaoTratado);
 });
 
-app.on("window-all-closed", () => {
-  app.quit();
+process.on("unhandledRejection", (motivoDaRejeicao) => {
+  console.error("Rejeicao de promessa nao tratada:", motivoDaRejeicao);
 });
+
+const obteveBloqueioDeInstanciaUnica = app.requestSingleInstanceLock();
+if (!obteveBloqueioDeInstanciaUnica) {
+  app.quit();
+} else {
+  app.on("second-instance", () => mostrarOverlay());
+
+  app.on("child-process-gone", (evento, detalhesDoProcesso) => {
+    console.error("Processo filho encerrado:", detalhesDoProcesso.type, detalhesDoProcesso.reason);
+  });
+
+  app.whenReady().then(() => {
+    configuracaoAtual = carregarConfiguracao();
+    aplicarInicioAutomatico();
+    criarJanelaDoOverlay();
+    registrarAtalhosFixos();
+  });
+
+  app.on("will-quit", () => {
+    salvarConfiguracao(configuracaoAtual);
+    globalShortcut.unregisterAll();
+  });
+
+  app.on("window-all-closed", () => {
+    if (estaEncerrandoAplicacao) {
+      app.quit();
+    }
+  });
+}
