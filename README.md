@@ -20,6 +20,9 @@ npm start
 | `Ctrl+Alt+\` | Mostrar / ocultar o overlay |
 | `Ctrl+Alt+C` | Modo configuração: redimensiona/move a janela e salva o tamanho |
 | `Ctrl+Alt+Q` | Sair do aplicativo |
+| `Ctrl+Alt+Shift+Setas` | Mover a janela na direção da seta (mantenha pressionado para continuar) |
+| `Ctrl+Alt+=` | Deixar a janela mais opaca (menos transparente) |
+| `Ctrl+Alt+-` | Deixar a janela mais transparente |
 | `Ctrl+0` | Mostrar o roteiro inteiro |
 | `Ctrl+1` | Mostrar apenas a Parte 0+1 (Setup e commits) |
 | `Ctrl+2` | Mostrar apenas a Parte 2 (Discovery) |

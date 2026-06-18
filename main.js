@@ -5,6 +5,10 @@ const { marked } = require("marked");
 
 const CAMINHO_DO_ROTEIRO = path.join(__dirname, "roteiro.md");
 const NUMERO_MAXIMO_DE_PARTES = 5;
+const PASSO_DE_MOVIMENTO_EM_PIXELS = 25;
+const PASSO_DE_OPACIDADE = 0.05;
+const OPACIDADE_MINIMA = 0.2;
+const OPACIDADE_MAXIMA = 1;
 
 const CONFIGURACAO_PADRAO = {
   largura: 480,
@@ -12,6 +16,7 @@ const CONFIGURACAO_PADRAO = {
   posicao_horizontal: null,
   posicao_vertical: null,
   tamanho_da_fonte: 14,
+  opacidade: 0.85,
 };
 
 let janelaDoOverlay = null;
@@ -121,6 +126,7 @@ function criarJanelaDoOverlay() {
   janelaDoOverlay.setContentProtection(true);
   janelaDoOverlay.setAlwaysOnTop(true, "screen-saver");
   janelaDoOverlay.setVisibleOnAllWorkspaces(true);
+  janelaDoOverlay.setOpacity(configuracaoAtual.opacidade);
   janelaDoOverlay.on("show", () => janelaDoOverlay.setContentProtection(true));
   janelaDoOverlay.loadFile(path.join(__dirname, "renderer", "index.html"));
 
@@ -130,11 +136,39 @@ function criarJanelaDoOverlay() {
   });
 }
 
+function moverJanela(deslocamentoHorizontal, deslocamentoVertical) {
+  if (!janelaDoOverlay) {
+    return;
+  }
+  const [posicaoHorizontalAtual, posicaoVerticalAtual] = janelaDoOverlay.getPosition();
+  const novaPosicaoHorizontal = posicaoHorizontalAtual + deslocamentoHorizontal;
+  const novaPosicaoVertical = posicaoVerticalAtual + deslocamentoVertical;
+  janelaDoOverlay.setPosition(novaPosicaoHorizontal, novaPosicaoVertical);
+  configuracaoAtual.posicao_horizontal = novaPosicaoHorizontal;
+  configuracaoAtual.posicao_vertical = novaPosicaoVertical;
+}
+
+function ajustarOpacidade(incrementoDeOpacidade) {
+  if (!janelaDoOverlay) {
+    return;
+  }
+  let novaOpacidade = configuracaoAtual.opacidade + incrementoDeOpacidade;
+  novaOpacidade = Math.min(OPACIDADE_MAXIMA, Math.max(OPACIDADE_MINIMA, novaOpacidade));
+  configuracaoAtual.opacidade = novaOpacidade;
+  janelaDoOverlay.setOpacity(novaOpacidade);
+}
+
 function registrarAtalhosDeNavegacao() {
   globalShortcut.register("Control+0", () => enviarFiltroDeParte(0));
   for (let numeroDaParte = 1; numeroDaParte <= NUMERO_MAXIMO_DE_PARTES; numeroDaParte += 1) {
     globalShortcut.register(`Control+${numeroDaParte}`, () => enviarFiltroDeParte(numeroDaParte));
   }
+  globalShortcut.register("Control+Alt+Shift+Left", () => moverJanela(-PASSO_DE_MOVIMENTO_EM_PIXELS, 0));
+  globalShortcut.register("Control+Alt+Shift+Right", () => moverJanela(PASSO_DE_MOVIMENTO_EM_PIXELS, 0));
+  globalShortcut.register("Control+Alt+Shift+Up", () => moverJanela(0, -PASSO_DE_MOVIMENTO_EM_PIXELS));
+  globalShortcut.register("Control+Alt+Shift+Down", () => moverJanela(0, PASSO_DE_MOVIMENTO_EM_PIXELS));
+  globalShortcut.register("Control+Alt+=", () => ajustarOpacidade(PASSO_DE_OPACIDADE));
+  globalShortcut.register("Control+Alt+-", () => ajustarOpacidade(-PASSO_DE_OPACIDADE));
 }
 
 function removerAtalhosDeNavegacao() {
@@ -142,6 +176,12 @@ function removerAtalhosDeNavegacao() {
   for (let numeroDaParte = 1; numeroDaParte <= NUMERO_MAXIMO_DE_PARTES; numeroDaParte += 1) {
     globalShortcut.unregister(`Control+${numeroDaParte}`);
   }
+  globalShortcut.unregister("Control+Alt+Shift+Left");
+  globalShortcut.unregister("Control+Alt+Shift+Right");
+  globalShortcut.unregister("Control+Alt+Shift+Up");
+  globalShortcut.unregister("Control+Alt+Shift+Down");
+  globalShortcut.unregister("Control+Alt+=");
+  globalShortcut.unregister("Control+Alt+-");
 }
 
 function registrarAtalhosFixos() {
@@ -214,6 +254,7 @@ app.whenReady().then(() => {
 });
 
 app.on("will-quit", () => {
+  salvarConfiguracao(configuracaoAtual);
   globalShortcut.unregisterAll();
 });
 
