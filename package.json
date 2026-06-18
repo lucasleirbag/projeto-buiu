@@ -4,7 +4,8 @@
   "description": "Overlay de roteiro com exclusao de captura de tela (teleprompter)",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "parar": "powershell -NoProfile -Command \"Get-Process electron -ErrorAction SilentlyContinue | Stop-Process -Force\""
   },
   "license": "MIT",
   "dependencies": {

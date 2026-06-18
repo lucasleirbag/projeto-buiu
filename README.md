@@ -13,6 +13,12 @@ npm install
 npm start
 ```
 
+Para encerrar qualquer instância presa (emergência):
+
+```powershell
+npm run parar
+```
+
 ## Atalhos
 
 | Atalho | Ação |
