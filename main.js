@@ -1,6 +1,7 @@
 const { app, BrowserWindow, globalShortcut } = require("electron");
 const fs = require("fs");
 const path = require("path");
+const { spawn } = require("child_process");
 const { marked } = require("marked");
 
 const CAMINHO_DO_ROTEIRO = path.join(__dirname, "roteiro.md");
@@ -9,6 +10,7 @@ const PASSO_DE_MOVIMENTO_EM_PIXELS = 25;
 const PASSO_DE_OPACIDADE = 0.05;
 const OPACIDADE_MINIMA = 0.2;
 const OPACIDADE_MAXIMA = 1;
+const ATRASO_DE_RECARGA_EM_MILISSEGUNDOS = 300;
 
 const CONFIGURACAO_PADRAO = {
   largura: 480,
@@ -25,6 +27,8 @@ let janelaDeTutorial = null;
 let modoConfiguracaoAtivo = false;
 let estaEncerrandoAplicacao = false;
 let configuracaoAtual = { ...CONFIGURACAO_PADRAO };
+let observadorDoRoteiro = null;
+let temporizadorDeRecarga = null;
 
 function obterCaminhoDaConfiguracao() {
   return path.join(app.getPath("userData"), "config.json");
@@ -104,6 +108,34 @@ function enviarRoteiroParaJanela() {
   const secoesRenderizadas = construirSecoesRenderizadas(lerTextoDoRoteiro());
   janelaDoOverlay.webContents.send("carregar-roteiro", secoesRenderizadas);
   janelaDoOverlay.webContents.send("aplicar-tamanho-da-fonte", configuracaoAtual.tamanho_da_fonte);
+}
+
+function abrirRoteiroNoEditor() {
+  spawn("notepad.exe", [CAMINHO_DO_ROTEIRO], { detached: true, stdio: "ignore" }).unref();
+  enviarAviso("Abrindo o roteiro para edicao. Salve (Ctrl+S) e o overlay atualiza sozinho.");
+}
+
+function recarregarRoteiroComAtraso() {
+  if (temporizadorDeRecarga) {
+    clearTimeout(temporizadorDeRecarga);
+  }
+  temporizadorDeRecarga = setTimeout(() => {
+    if (janelaDoOverlay && !janelaDoOverlay.isDestroyed()) {
+      enviarRoteiroParaJanela();
+      enviarAviso("Roteiro atualizado.");
+    }
+  }, ATRASO_DE_RECARGA_EM_MILISSEGUNDOS);
+}
+
+function observarArquivoDoRoteiro() {
+  if (observadorDoRoteiro) {
+    return;
+  }
+  try {
+    observadorDoRoteiro = fs.watch(CAMINHO_DO_ROTEIRO, () => recarregarRoteiroComAtraso());
+  } catch (erroAoObservar) {
+    console.error("Falha ao observar o roteiro:", erroAoObservar);
+  }
 }
 
 function criarJanelaDoOverlay() {
@@ -242,6 +274,7 @@ function registrarAtalhosFixos() {
   globalShortcut.register("Control+Alt+R", reiniciarAplicacao);
   globalShortcut.register("Control+Alt+I", alternarInicioComOSistema);
   globalShortcut.register("Control+Alt+H", alternarTutorial);
+  globalShortcut.register("Control+Alt+E", abrirRoteiroNoEditor);
 }
 
 function moverJanela(deslocamentoHorizontal, deslocamentoVertical) {
@@ -388,6 +421,7 @@ if (!obteveBloqueioDeInstanciaUnica) {
     aplicarInicioAutomatico();
     criarJanelaDoOverlay();
     registrarAtalhosFixos();
+    observarArquivoDoRoteiro();
   });
 
   app.on("will-quit", () => {

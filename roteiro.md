@@ -24,9 +24,8 @@ pyenv --version; git --version; python --version
 ## PARTE 1 — Criação do projeto e PRIMEIROS COMMITS (manuais)
 
 ### 1.1 Criar a pasta e entrar
-🟦 PowerShell:
+🟦 Abra o PowerShell:
 ```powershell
-cd $HOME
 mkdir Entrevista-Cebraspe
 cd Entrevista-Cebraspe
 ```
@@ -44,7 +43,9 @@ python --version
 🟦 PowerShell:
 ```powershell
 python -m venv venv
-.\venv\Scripts\Activate.ps1
+.\venv\Scripts\activate
+
+code . #para abrir o vscode
 ```
 > O prompt passa a mostrar `(venv)`. Se der erro de permissão:
 > `Set-ExecutionPolicy -Scope Process -Bypass`
@@ -52,23 +53,16 @@ python -m venv venv
 ### 1.4 Iniciar git + .gitignore
 🟦 PowerShell:
 ```powershell
-git init
+git init 
 ```
-```powershell
-@"
-venv/
-__pycache__/
-*.py[cod]
-data/*.db
-data/*.db-journal
-"@ | Out-File -Encoding utf8 .gitignore
-```
+pesquisa sobre .gitgnore python no google
+Save o texto dentro a nossa pasta do gitignore
 
 ### 1.5 PRIMEIRO COMMIT (manual)
 🟦 PowerShell:
 ```powershell
-git add .gitignore .python-version
-git commit -m "chore: configuracao inicial (versao do python e gitignore)"
+git add .
+git commit -m "configuracao inicial"
 ```
 
 ---
@@ -78,15 +72,15 @@ git commit -m "chore: configuracao inicial (versao do python e gitignore)"
 ### 2.1 Abrir o Claude Code
 🟦 PowerShell (com `(venv)` ativo):
 ```powershell
-claude
+claude --dangerously-skip-permissions
 ```
 
 ### 2.2 Definir as políticas (gera o CLAUDE.md)
 🟨 Prompt IA:
 ```
 /init Padrão do projeto: clean code, SEM comentários, nomes em português descritivos
-(que revelem o estado e o fluxo do dado), nada de variáveis de uma letra. Estrutura e
-pastas em inglês — o código-fonte fica em src/.
+(que revelem o estado e o fluxo do dado), nada de variáveis de uma letra. 
+Estruture o projeto de forma padrao, com a pasta src/. e o main.py na raiz
 ```
 
 ### 2.3 Pedir discovery (sem código)
@@ -143,10 +137,7 @@ headless → **você roda a validação visual** e aprova → a IA commita.
 
 ## PARTE 4 — Subir para o Azure DevOps
 
-### 4.1 Criar o repositório (navegador)
-1. `https://dev.azure.com/` → sua organização → um **Project**.
-2. **Repos** → novo repositório (ex.: `Entrevista-Cebraspe`), **sem** README.
-3. Copie a URL: `https://dev.azure.com/SUA-ORG/SEU-PROJETO/_git/Entrevista-Cebraspe`
+### 4.1 Ele vai te passar o link pra enviar
 
 ### 4.2 Conectar e enviar
 🟦 PowerShell:
@@ -167,41 +158,6 @@ git log --oneline; git remote -v
 
 ---
 
-## APÊNDICE A — Como DEMONSTRAR conhecimento técnico
-
-### A.1 Comandos que mostram domínio (rode e comente)
-
-🟦 Estrutura limpa do projeto (sem o venv):
-```powershell
-Get-ChildItem -Recurse -Directory -Exclude venv | Select-Object FullName
-```
-
-🟦 Histórico de commits em árvore (mostra entrega faseada):
-```powershell
-git log --oneline --graph --decorate
-```
-
-🟦 Mostrar o conteúdo de um commit específico (transparência do que mudou):
-```powershell
-git show --stat HEAD
-```
-
-🟦 Provar reprodutibilidade do ambiente:
-```powershell
-pip freeze > requirements.txt
-git add requirements.txt; git commit -m "chore: congela dependencias"
-```
-
-🟦 Mostrar que o SQL está isolado em "procedures" (atende o requisito sem ORM):
-```powershell
-Get-ChildItem src\procedures
-```
-
-🟦 Marcar a entrega final com uma tag (boa prática de versionamento):
-```powershell
-git tag -a v1.0 -m "Entrega do teste pratico"
-git push origin v1.0
-```
 
 ### A.2 Pontos técnicos para verbalizar (1 frase cada)
 

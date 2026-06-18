@@ -13,6 +13,15 @@ npm install
 npm start
 ```
 
+Para editar o texto do roteiro (abre o `roteiro.md` no Bloco de Notas):
+
+```powershell
+npm run editar
+```
+
+Com o app aberto, você também pode apertar `Ctrl+Alt+E`. Ao salvar o arquivo, o
+overlay recarrega o texto sozinho.
+
 Para encerrar qualquer instância presa (emergência):
 
 ```powershell
@@ -26,6 +35,7 @@ npm run parar
 | `Ctrl+Alt+\` | Mostrar / ocultar o overlay |
 | `Ctrl+Alt+C` | Modo configuração: redimensiona/move a janela e salva o tamanho |
 | `Ctrl+Alt+H` | Abrir/fechar a janela de tutorial (lista de atalhos) |
+| `Ctrl+Alt+E` | Editar o `roteiro.md` no Bloco de Notas; ao salvar, o overlay atualiza sozinho |
 | `Ctrl+Alt+R` | Reiniciar o aplicativo (botão de pânico) |
 | `Ctrl+Alt+I` | Ligar/desligar início automático com o Windows |
 | `Ctrl+Alt+Q` | Sair do aplicativo |
