@@ -121,6 +121,7 @@ function criarJanelaDoOverlay() {
   janelaDoOverlay.setContentProtection(true);
   janelaDoOverlay.setAlwaysOnTop(true, "screen-saver");
   janelaDoOverlay.setVisibleOnAllWorkspaces(true);
+  janelaDoOverlay.on("show", () => janelaDoOverlay.setContentProtection(true));
   janelaDoOverlay.loadFile(path.join(__dirname, "renderer", "index.html"));
 
   janelaDoOverlay.webContents.on("did-finish-load", () => {
@@ -164,6 +165,7 @@ function mostrarOverlay() {
     return;
   }
   janelaDoOverlay.showInactive();
+  janelaDoOverlay.setContentProtection(true);
   registrarAtalhosDeNavegacao();
 }
 
@@ -202,6 +204,7 @@ function alternarModoConfiguracao() {
     configuracaoAtual.posicao_vertical = limitesAtuaisDaJanela.y;
     salvarConfiguracao(configuracaoAtual);
   }
+  janelaDoOverlay.setContentProtection(true);
   janelaDoOverlay.webContents.send("modo-configuracao", modoConfiguracaoAtivo);
 }
 
