@@ -1,0 +1,16 @@
+{
+  "name": "projeto-buiu",
+  "version": "1.0.0",
+  "description": "Overlay de roteiro com exclusao de captura de tela (teleprompter)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "license": "MIT",
+  "dependencies": {
+    "marked": "^14.1.2"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0"
+  }
+}
